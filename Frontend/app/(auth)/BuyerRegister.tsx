@@ -91,27 +91,28 @@ const BuyerRegister = () => {
 
   // Fetch country data from an API
   useEffect(() => {
-    const fetchCountries = async () => {
-      try {
-        const response = await fetch(
-          "https://countriesnow.space/api/v0.1/countries/codes"
-        );
-        const data = await response.json();
-        // console.log("API Response:", data); // Log the response to verify structure
-
-        const countryItems = data.data.map((country: any) => ({
-          label: country.name, // Country name
-          value: `${country.dial_code}`, // Combine dial code and name for unique value
-        }));
-
-        setItems(countryItems); // Set the items for the dropdown
-      } catch (error) {
-        console.error("Error fetching country data:", error);
-      }
-    };
-
-    fetchCountries();
-  }, []);
+     const fetchCountries = async () => {
+       try {
+         const response = await fetch(
+           "https://countriesnow.space/api/v0.1/countries/codes"
+         );
+         const data = await response.json();
+ 
+         const countryItems = data.data.map((country: any, index: number) => ({
+           label: country.name,
+           value: country.dial_code,
+           key: `${country.dial_code}_${index}`, // Added unique key
+         }));
+ 
+         setItems(countryItems);
+       } catch (error) {
+         console.error("Error fetching country data:", error);
+       }
+     };
+ 
+     fetchCountries();
+   }, []);
+ 
 
   const handleCreateAccount = () => {
      router.push("/Verification");
@@ -223,25 +224,24 @@ const BuyerRegister = () => {
               setValue={setCountryCode}
               setItems={setItems}
               searchable={true}
-             
               searchTextInputStyle={{
                 borderRadius: 8,
                 borderWidth: 1,
                 borderColor: "#E0E0E0",
-                color: "#404040", // Text color for search input
-              }} // Enable search functionality
+                color: "#404040",
+              }}
               placeholder="Select a country"
               style={{
                 borderWidth: 0,
                 borderRadius: 8,
-                
               }}
               dropDownContainerStyle={{
                 borderWidth: 1,
                 borderColor: "#E0E0E0",
                 borderRadius: 8,
               }}
-              
+              itemKey="key" // Added to use our unique key
+              listMode="SCROLLVIEW" // Better for performance
             />
           </View>
           <View><Text>{countryCode}</Text></View>
