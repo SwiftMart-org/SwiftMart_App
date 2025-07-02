@@ -8,6 +8,7 @@ import "react-native-reanimated"
 import { SafeAreaView } from 'react-native-safe-area-context'
 import "../global.css"
 import { Stack } from 'expo-router'
+import { CartProvider } from './context/CartContext'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -33,13 +34,14 @@ export default function RootLayout() {
   return (
     <View style={{ flex: 1 }}>
       <StatusBar style="dark" />
+      <CartProvider>
       <Stack screenOptions={{ headerShown: false }} >
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(root)" />
         <Stack.Screen name="+not-found" />
         </Stack>
-      
+        </CartProvider>
     </View>
   );
 }

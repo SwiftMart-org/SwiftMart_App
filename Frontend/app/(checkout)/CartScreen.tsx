@@ -4,20 +4,20 @@ import {
   FlatList,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   Alert,
 } from "react-native";
+import { SafeAreaView } from 'react-native';
 import CartItem from "./components/CartItem";
-import { useState } from "react";
-import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Modal from "react-native-modal";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { useState, useEffect } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Entypo from "@expo/vector-icons/Entypo";
+import AntDesign from "@expo/vector-icons/AntDesign";
 import Button from "@/components/Button";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import InvitedList from "./components/InvitedList";
+import ShoppingCartTotalModal from "./components/ShoppingCartTotalModal";
+import Modal from "react-native-modal";
 
 const cartObject = [
   {
@@ -74,13 +74,21 @@ const cartObject = [
 
 const CartScreen = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [carts, setCarts] = useState(cartObject);
   const [selectedCartId, setSelectedCartId] = useState("default");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isInviteVisible, setIsInviteVisible] = useState(false);
-  const [isCreatingCart, setIsCreatingCart] = useState(false);
-  const [newCartName, setNewCartName] = useState("");
   const [showCartList, setShowCartList] = useState(false);
+
+  // Handle new cart creation
+  useEffect(() => {
+    if (params.newCart) {
+      const newCart = JSON.parse(params.newCart as string);
+      setCarts(prevCarts => [...prevCarts, newCart]);
+      setSelectedCartId(newCart.id);
+    }
+  }, [params.newCart]);
 
   const selectedCart = carts.find((cart) => cart.id === selectedCartId);
 
@@ -140,28 +148,21 @@ const CartScreen = () => {
   const shipping = 5.99;
   const total = subtotal + shipping;
 
-  const handleCreateCart = () => {
-    if (newCartName.trim() === "") return;
-
-    const newCartId = Date.now().toString();
-    const newCart = { id: newCartId, name: newCartName, items: [], invited: [] };
-    setCarts([...carts, newCart]);
-    setSelectedCartId(newCartId);
-    setNewCartName("");
-    setIsCreatingCart(false);
+  const handleCreateCartPress = () => {
+    router.push('./components/CreateCartScreen'); // Changed to navigate to CreateCartScreen
     setShowCartList(false);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-20 p-4">
       {/* Header */}
-      <View className="flex-row items-center justify-between mb-4">
+      <View className="flex-row items-center p-4" style={{ marginTop: 24 }}>
         <TouchableOpacity
-          onPress={() => router.push("/")}
-          style={{ flexDirection: "row", alignItems: "center" }}
+          className="flex-row items-center"
+          onPress={() => router.push('/')}
         >
           <Entypo name="chevron-left" size={24} color="#156651" />
-          <Text className="font-Manrope text-primary text-BodyBold">Go To Home</Text>
+          <Text className="text-BodyRegular font-Manrope text-primary ml-2">Go To Home</Text>
         </TouchableOpacity>
       </View>
 
@@ -242,10 +243,7 @@ const CartScreen = () => {
                 textColor="text-primary"
                 hasBorder={true}
                 disabled={false}
-                onPress={() => {
-                  setIsCreatingCart(true);
-                  setShowCartList(false);
-                }}
+                onPress={handleCreateCartPress} // Updated to use the new handler
               />
             </ScrollView>
           </View>
@@ -277,48 +275,20 @@ const CartScreen = () => {
       </TouchableOpacity>
 
       {/* Cart Total Modal */}
-      <Modal
+      <ShoppingCartTotalModal
         isVisible={isModalVisible}
-        swipeDirection="down"
-        onSwipeComplete={() => setIsModalVisible(false)}
-        onBackdropPress={() => setIsModalVisible(false)}
-        style={{ justifyContent: "flex-end", margin: 0 }}
-      >
-        <View className="flex-1 justify-end bg-black/30">
-          <View
-            className="bg-white p-4 rounded-t-2xl shadow"
-            style={{ height: 290,  padding: 16, gap: 8}} 
-          >
-            <View className="flex-row justify-center mb-4">
-              <View className="w-16 h-1.5 bg-neutral-40 rounded-full" />
-            </View>
-
-            <View className="flex-row justify-between mb-2">
-              <Text className="font-Manrope text-BodyRegular text-neutral-80">Subtotal</Text>
-              <Text className="font-Manrope text-BodyBold text-text">${subtotal.toFixed(2)}</Text>
-            </View>
-
-            <View className="flex-row justify-between mb-2">
-              <Text className="font-Manrope text-BodyRegular text-neutral-80">Shipping</Text>
-              <Text className="font-Manrope text-BodyBold text-text">${shipping.toFixed(2)}</Text>
-            </View>
-
-            <View className="flex-row justify-between mb-4 border-t pt-2 border-neutral-30">
-              <Text className="font-Manrope text-Heading5 text-text">Total</Text>
-              <Text className="font-Manrope text-Heading5 text-text">${total.toFixed(2)}</Text>
-            </View>
-
-            <Button
-              BtnText="Checkout"
-              bgColor="bg-primary"
-              textColor="text-neutral-10"
-              hasBorder={true}
-              disabled={false}
-              onPress={() => setIsModalVisible(false)}
-            />
-          </View>
-        </View>
-      </Modal>
+        subtotal={subtotal}
+        shipping={shipping}
+        onClose={() => setIsModalVisible(false)}
+        showCheckoutButton={true}
+        onCheckout={() => {
+          setIsModalVisible(false);
+          router.push({
+            pathname: '/(checkout)/CheckoutScreen',
+            params: { cart: JSON.stringify(selectedCart) }
+          });
+        }}
+      />
 
       {/* Invite List Modal */}
       <Modal
@@ -331,29 +301,6 @@ const CartScreen = () => {
           onRemove={handleRemovePerson}
           onClose={() => setIsInviteVisible(false)}
         />
-      </Modal>
-
-      {/* Create Cart Modal */}
-      <Modal
-        isVisible={isCreatingCart}
-        onBackdropPress={() => setIsCreatingCart(false)}
-        style={{ justifyContent: "center", margin: 20 }}
-      >
-        <View className="bg-white p-4 rounded-2xl">
-          <Text className="font-Manrope text-BodyBold mb-4 text-center">Create New Cart</Text>
-          <TextInput
-            placeholder="Enter cart name"
-            value={newCartName}
-            onChangeText={setNewCartName}
-            className="border p-2 rounded mb-4"
-          />
-          <TouchableOpacity
-            className="bg-primary p-4 rounded-2xl"
-            onPress={handleCreateCart}
-          >
-            <Text className="font-Manrope text-BodyBold text-neutral-10 text-center">Create Cart</Text>
-          </TouchableOpacity>
-        </View>
       </Modal>
     </SafeAreaView>
   );
