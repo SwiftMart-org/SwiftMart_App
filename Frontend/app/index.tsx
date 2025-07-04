@@ -1,15 +1,10 @@
-import { View, Text } from 'react-native'
-import React from 'react'
-import { Redirect } from 'expo-router'
-import "../global.css"
-import 'react-native-gesture-handler';
-import 'react-native-reanimated';
-
+import { View, Text } from "react-native";
+import React from "react";
+import { Redirect } from "expo-router";
+import "@/global.css";
 
 const index = () => {
-  return <Redirect href="/CartScreen" />
-    
-  
-}
+  return <Redirect href="/(root)/(tabs)/Home" />;
+};
 
-export default index
+export default index;
