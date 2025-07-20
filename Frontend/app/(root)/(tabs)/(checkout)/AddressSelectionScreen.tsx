@@ -10,7 +10,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import SavedAddressCard from "./components/SavedAddressCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useCheckout } from "../../../context/_CheckoutContext";
+import { useCheckout } from '@/context/_CheckoutContext';
 
 type Address = {
   id: string;
@@ -79,8 +79,6 @@ const AddressSelectionScreen: React.FC = () => {
         zipCode: selectedAddress.code,
         phone: selectedAddress.phone,
       };
-      console.log("Selected address:", selectedAddress);
-      console.log("Address for checkout:", addressForCheckout);
       setAddress(addressForCheckout);
     }
     router.push("/CheckoutScreen");

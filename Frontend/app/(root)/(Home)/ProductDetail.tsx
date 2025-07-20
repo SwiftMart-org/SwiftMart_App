@@ -17,10 +17,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "@/components/PrimaryButton";
 import DropDownPicker from "react-native-dropdown-picker";
 import Button from "@/components/Button";
+import { useWishlist } from "@/context/WishlistContext";
+import { useCart } from "../../context/_CartContext";
+import type { Cart } from "../../context/_CartContext";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProductDetail = () => {
   const router = useRouter();
-  const { productId } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const productId = params.productId;
+  let shouldCloseCartModal = false;
+  if (typeof params.closeCartModal === 'string') {
+    shouldCloseCartModal = params.closeCartModal === 'true';
+  } else if (Array.isArray(params.closeCartModal)) {
+    shouldCloseCartModal = params.closeCartModal.includes('true');
+  } else if (typeof params.closeCartModal === 'boolean') {
+    shouldCloseCartModal = params.closeCartModal;
+  }
   const product = productData.find((p) => p.id === Number(productId));
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState(
@@ -43,7 +56,6 @@ const ProductDetail = () => {
           product.shippingOptions[0]?.type) ||
           ""
   );
-  const [wishlisted, setWishlisted] = useState(false);
   const [showAddedToCart, setShowAddedToCart] = useState(false);
   const [showAddedToWishlist, setShowAddedToWishlist] = useState(false);
   const [wishlistAction, setWishlistAction] = useState<"added" | "removed">(
@@ -51,13 +63,11 @@ const ProductDetail = () => {
   );
   const [cartModalVisible, setCartModalVisible] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [selectedCart, setSelectedCart] = useState("My Cart");
-  const [carts, setCarts] = useState(["My Cart", "Christmas Cart"]);
-  const [newCartName, setNewCartName] = useState("");
   const [cartDropdownOpen, setCartDropdownOpen] = useState(false);
-  const [cartItems, setCartItems] = useState(
-    carts.map((c) => ({ label: c, value: c }))
-  );
+  const [newCartName, setNewCartName] = useState("");
+
+  const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
+  const { carts, selectedCartId, setSelectedCartId, addCart, addItemToCart, selectCart } = useCart();
 
   // Drag-to-close modal state
   const panY = useState(new Animated.Value(0))[0];
@@ -98,8 +108,6 @@ const ProductDetail = () => {
 
   const resetCartModal = () => {
     setQuantity(1);
-    setSelectedCart("My Cart");
-    setCartDropdownOpen(false);
     setNewCartName("");
   };
 
@@ -148,6 +156,13 @@ const ProductDetail = () => {
     }
   }, [cartModalVisible]);
 
+  // Close Add to Cart modal if returning from CreateCartScreen
+  useEffect(() => {
+    if (shouldCloseCartModal) {
+      setCartModalVisible(false);
+    }
+  }, [shouldCloseCartModal]);
+
   if (!product) {
     return (
       <SafeAreaView className="flex-1 justify-center items-center bg-white">
@@ -168,6 +183,9 @@ const ProductDetail = () => {
     return (sum / reviews.length).toFixed(1);
   };
 
+  // Helper to get selected cart name
+  const selectedCart = carts.find((c: Cart) => c.id === selectedCartId)?.name || "My Cart";
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1 pb-8">
@@ -175,6 +193,29 @@ const ProductDetail = () => {
         <View className="flex-row items-center justify-between px-4 pt-2">
           <TouchableOpacity onPress={() => router.back()}>
             <Entypo name="chevron-left" size={28} color="black" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              if (isWishlisted(product.id)) {
+                console.log('Removing from wishlist:', product.id, product.name);
+                removeFromWishlist(product.id);
+              } else {
+                console.log('Adding to wishlist:', product.id, product.name);
+                addToWishlist({
+                  id: product.id,
+                  name: product.name,
+                  image: product.image,
+                  price: parseFloat(product.price),
+                  originalPrice: parseFloat(product.originalPrice),
+                  discount: product.discount ? parseFloat(product.discount) : undefined,
+                  rating: product.rating,
+                });
+              }
+            }}
+            className="absolute top-2 right-4 z-10 bg-white/80 rounded-full p-2"
+            style={{ elevation: 2 }}
+          >
+            <AntDesign name={isWishlisted(product.id) ? "heart" : "hearto"} size={24} color="#EB1A1A" />
           </TouchableOpacity>
         </View>
         {/* Product Image */}
@@ -471,16 +512,27 @@ const ProductDetail = () => {
             marginRight: 8,
           }}
           onPress={() => {
-            setWishlisted((prev) => {
-              const newValue = !prev;
-              setWishlistAction(newValue ? "added" : "removed");
+            const currentlyWishlisted = isWishlisted(product.id);
+            if (currentlyWishlisted) {
+              removeFromWishlist(product.id);
+              setWishlistAction("removed");
+            } else {
+              addToWishlist({
+                id: product.id,
+                name: product.name,
+                image: product.image,
+                price: parseFloat(product.price),
+                originalPrice: parseFloat(product.originalPrice),
+                discount: product.discount ? parseFloat(product.discount) : undefined,
+                rating: product.rating,
+              });
+              setWishlistAction("added");
+            }
               setShowAddedToWishlist(true);
               setTimeout(() => setShowAddedToWishlist(false), 1500);
-              return newValue;
-            });
           }}
         >
-          {wishlisted ? (
+          {isWishlisted(product.id) ? (
             <AntDesign name="heart" size={24} color="#E44A4A" />
           ) : (
             <AntDesign name="hearto" size={24} color="#156651" />
@@ -592,37 +644,22 @@ const ProductDetail = () => {
           </View>
           {cartDropdownOpen && (
             <View className=" flex-1 gap-4">
-              {carts.map((cart) => (
+              {carts.map((cart: Cart) => (
                 <TouchableOpacity
-                  key={cart}
+                  key={cart.id}
                   className={`flex-row w-full items-center justify-between rounded-[16px] px-4 py-6  ${
-                    selectedCart === cart
+                    selectedCartId === cart.id
                       ? "bg-transparent border-2 border-primary "
                       : "bg-white border border-neutral-40"
                   }`}
                   onPress={() => {
-                    setSelectedCart(cart);
+                    selectCart(cart.id);
                     setCartDropdownOpen(false);
                   }}
                 >
-                  <Text className=" text-BodyBold text-text">{cart}</Text>
+                  <Text className=" text-BodyBold text-text">{cart.name}</Text>
                   <View className="flex-row items-center gap-4">
                     <Feather name="user-plus" size={24} color="#156651" />
-
-                    <Feather
-                      name="trash-2"
-                      size={24}
-                      color="#E44A4A"
-                      onPress={() => {
-                        setCarts((prev) => prev.filter((c) => c !== cart));
-                        setCartItems((prev) =>
-                          prev.filter((item) => item.value !== cart)
-                        );
-                        if (selectedCart === cart && carts.length > 1) {
-                          setSelectedCart(carts.find((c) => c !== cart) || "");
-                        }
-                      }}
-                    />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -634,6 +671,16 @@ const ProductDetail = () => {
                   textColor="text-primary"
                   hasBorder={true}
                   borderColor="border-primary"
+                  onPress={() => {
+                    setCartDropdownOpen(false);
+                    setCartModalVisible(false);
+                    setTimeout(() => {
+                      router.push({
+                        pathname: '/(root)/(tabs)/(checkout)/components/CreateCartScreen',
+                        params: { returnTo: '/(root)/(Home)/ProductDetail', productId: product.id }
+                      });
+                    }, 100);
+                  }}
                 />
               </View>
             </View>
@@ -667,6 +714,26 @@ const ProductDetail = () => {
           <PrimaryButton
             BtnText="Add to Cart"
             onPress={() => {
+              // Find the selected cart object
+              const cart = carts.find((c: Cart) => c.id === selectedCartId);
+              if (!cart) return;
+              // Find the selected shipping option object
+              const shippingOption = product.shippingOptions.find(opt => opt.type === selectedShipping);
+              // Prepare CartItem
+              const item = {
+                id: (typeof crypto !== 'undefined' && crypto.randomUUID)
+                  ? crypto.randomUUID()
+                  : product.id.toString() + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                image: (variant?.image || product.image),
+                title: product.name,
+                name: product.name,
+                price: parseFloat(variant?.price || product.price),
+                oldPrice: parseFloat(product.originalPrice),
+                color: variant?.color || "",
+                quantity,
+                shippingOption, // Add the selected shipping option
+              };
+              addItemToCart(cart.id, item);
               setShowAddedToCart(true);
               setTimeout(() => setShowAddedToCart(false), 1500);
               setCartDropdownOpen(false);

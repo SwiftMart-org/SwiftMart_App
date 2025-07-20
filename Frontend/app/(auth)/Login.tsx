@@ -26,6 +26,8 @@ import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import { AntDesign, FontAwesome } from "@expo/vector-icons";
 // @ts-ignore
 import * as SecureStore from "expo-secure-store";
+import GoogleIcon from "@/assets/svgs/google.svg";
+import Facebook from "@/assets/svgs/facebook.svg"
 
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -171,9 +173,6 @@ const Login = () => {
       } else {
         // Email exists but sending failed - for now, let's proceed to code input
         // In production, you'd want to show an error message
-        console.log(
-          "Email sending failed, but email exists. Proceeding to code input for testing."
-        );
         setIsEmailAssigned(true);
         setIsEnteringCode(true);
       }
@@ -227,12 +226,10 @@ const Login = () => {
 
   const handlePasswordResetSubmit = async () => {
     if (newPassword !== confirmPassword) {
-      console.log("Passwords do not match!");
       return;
     }
 
     if (!isValidPassword(newPassword).length) {
-      console.log("Password does not meet the criteria!");
       return;
     }
 
@@ -418,21 +415,23 @@ const Login = () => {
                 <View className="h-[1px] flex-1 bg-neutral-50" />
               </View>
 
-              {/* Social Buttons */}
-              <IconButton
-                icon={require("@/assets/images/google-icon.png")}
-                BtnText="Continue with Google"
-                textColor="text-primary"
-                borderColor="border-primary"
-                bgColor="bg-neutral-10"
-              />
-              <IconButton
-                icon={require("@/assets/images/facebook-icon.png")}
-                BtnText="Continue with Facebook"
-                textColor="text-primary"
-                borderColor="border-primary"
-                bgColor="bg-neutral-10"
-              />
+                {/* Social Buttons */}
+            <IconButton
+            IconComponent={GoogleIcon}
+              BtnText="Continue with Google"
+              textColor="text-primary"
+              borderColor="border-primary"
+              bgColor="bg-neutral-10"
+            />
+
+            <IconButton
+            IconComponent={Facebook}
+            fillColor="#1877F2"
+            BtnText="Continue with Facebook"
+              textColor="text-primary"
+              borderColor="border-primary"
+              bgColor="bg-neutral-10"
+            />
 
               {/* Register Link */}
               <View className="flex-row items-center justify-center">

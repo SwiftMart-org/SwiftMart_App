@@ -8,6 +8,12 @@ import "@/global.css";
 import { Stack } from "expo-router";
 import { CartProvider } from "./context/_CartContext";
 import { SearchProvider } from "@/components/SearchContext";
+import { WishlistProvider } from "@/context/WishlistContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import { UserProvider } from '@/context/UserContext';
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
+import { PaymentMethodsProvider } from "@/context/PaymentMethodsContext";
+import { FeedProvider } from './context/FeedContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,18 +36,30 @@ export default function RootLayout() {
   }
 
   return (
-    <SearchProvider>
-      <CartProvider>
-        <View className="font-Manrope" style={{ flex: 1 }}>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(root)" options={{ headerShown: false }} />
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </View>
-      </CartProvider>
-    </SearchProvider>
+    <ActionSheetProvider>
+      <UserProvider>
+        <WishlistProvider>
+          <NotificationProvider>
+            <SearchProvider>
+              <CartProvider>
+                <PaymentMethodsProvider>
+                  <FeedProvider>
+                    <View className="font-Manrope" style={{ flex: 1 }}>
+                      <StatusBar style="dark" />
+                      <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="index" options={{ headerShown: false }} />
+                        <Stack.Screen name="(auth)" />
+                        <Stack.Screen name="(root)" options={{ headerShown: false }} />
+                        <Stack.Screen name="+not-found" />
+                      </Stack>
+                    </View>
+                  </FeedProvider>
+                </PaymentMethodsProvider>
+              </CartProvider>
+            </SearchProvider>
+          </NotificationProvider>
+        </WishlistProvider>
+      </UserProvider>
+    </ActionSheetProvider>
   );
 }

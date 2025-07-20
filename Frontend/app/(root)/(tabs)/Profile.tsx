@@ -6,13 +6,29 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { Entypo, Feather, MaterialIcons } from "@expo/vector-icons";
 import PrimaryButton from "@/components/PrimaryButton";
 import ProfileCard from "@/components/ProfileCard";
 import { router } from "expo-router";
+import { useUser } from '@/context/UserContext';
+import { navigateToTransactionPage } from '@/utils/orders/navigation';
+
+// Mock notification data for badge count (matching the notifications screen)
+const mockNotifications = [
+  { id: 1, read: false }, // Order Shipped
+  { id: 2, read: false }, // Flash Sale Alert
+  { id: 3, read: true },  // Package Delivered
+  { id: 4, read: true },  // New Features
+  { id: 5, read: true },  // Order Confirmed
+  { id: 6, read: true },  // Birthday Special
+  { id: 7, read: true },  // Delivery Update
+];
 
 const Profile = () => {
+  const { user } = useUser();
+  const unreadCount = mockNotifications.filter(n => !n.read).length;
+  
   return (
     <View className="flex-1 bg-neutral-10 pb-12 ">
       <ImageBackground
@@ -26,7 +42,19 @@ const Profile = () => {
           resizeMode="contain"
         />
         <Text className="text-Heading3 text-neutral-10">My Account</Text>
+        <TouchableOpacity 
+          onPress={() => router.push("/(root)/(profile)/Notifications")}
+          className="relative"
+        >
         <Feather name="bell" size={24} color="white" />
+          {unreadCount > 0 && (
+            <View className="absolute -top-1 -right-1 w-4 h-4 bg-alert rounded-full items-center justify-center">
+              <Text className="text-[10px] text-white font-bold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </ImageBackground>
       <View className="flex-1 gap-6 bg-white px-4 overflow-visible">
         <View
@@ -37,17 +65,17 @@ const Profile = () => {
             <View className="rounded-full w-[64px] h-[64px] overflow-hidden">
               <ImageBackground
                 className="w-full h-full  "
-                source={require("@/assets/images/userPic.jpeg")}
+                source={user.photo}
               />
             </View>
             <View>
-              <Text className="text-Heading4 text-text">Claire Cooper</Text>
+              <Text className="text-Heading4 text-text">{user.name}</Text>
               <Text className="text-BodySmallRegular text-neutral-70">
-                claire.cooper@mail.com
+                {user.email}
               </Text>
             </View>
           </View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(root)/(profile)/EditProfile')}>
             <Feather name="edit" size={24} color="#404040" />
           </TouchableOpacity>
         </View>
@@ -61,63 +89,61 @@ const Profile = () => {
               <PrimaryButton BtnText="Become A Seller" onPress={() => { router.push("/(seller_dashboard)/SellerGetStarted") }} />
             </View>
             <View className="gap-4">
-              <Text className="text-BodyBold text-text font-Manrope">General</Text>
+              <Text className="text-BodyBold text-text">General</Text>
               {/* Transaction Card */}
               <ProfileCard
                 text="Transaction"
                 IconComponent={MaterialIcons}
                 iconName="receipt"
-                onPress={() => console.log("Transaction card pressed!")}
+                onPress={navigateToTransactionPage}
               />
               {/* Settings Card */}
               <ProfileCard
                 text="Wishlist"
                 IconComponent={Feather}
                 iconName="heart"
-                onPress={() => console.log("Wishlist card pressed!")}
+                onPress={() => router.push("/(root)/(profile)/Wishlist")}
               />
               {/* Saved Address Card */}
               <ProfileCard
                 text="Saved Address"
                 IconComponent={Feather}
                 iconName="bookmark"
-                onPress={() => console.log("Saved Adress card pressed!")}
+                onPress={() => router.push("/(root)/(profile)/SavedAddressScreen")}
               />
               {/* Saved Address Card */}
               <ProfileCard
                 text="Payment Methods"
                 IconComponent={Feather}
                 iconName="credit-card"
-                onPress={() => console.log("Payment Methods card pressed!")}
+                onPress={() => router.push("/(root)/(profile)/PaymentSelectionScreen")}
               />
-              {/* Saved Address Card */}
+              {/* Notification Card */}
               <ProfileCard
                 text="Notification"
                 IconComponent={Feather}
                 iconName="bell"
-                onPress={() => console.log("Notification card pressed!")}
+                onPress={() => router.push("/(root)/(profile)/Notifications")}
               />
-              {/* Saved Address Card */}
+              {/* Security Card */}
               <ProfileCard
                 text="Security"
                 IconComponent={Feather}
                 iconName="lock"
-                onPress={() => console.log("Security card pressed!")}
+                onPress={() => router.push("/(root)/(profile)/SecurityScreen")}
               />
             </View>
             <View className="gap-4">
-              <Text className="text-BodyBold text-text font-Manrope">General</Text>
-              {/* Transaction Card */}
+              <Text className="text-BodyBold text-text">Support</Text>
+              {/* Contact Us Card */}
               <ProfileCard
                 text="Get in Touch With Us"
                 IconComponent={Feather}
                 iconName="user"
-                onPress={() =>
-                  console.log("Get in Touch With Us card pressed!")
-                }
+                onPress={() => router.push("/(root)/(profile)/ContactUsScreen")}
               />
             </View>
-            <Text className="text-center text-neutral-60 text-Caption mt-4 font-Manrope">
+            <Text className="text-center text-neutral-60 text-Caption mt-4">
               App version: 1.0
             </Text>
           </ScrollView>
